@@ -939,6 +939,109 @@ show_summary() {
 }
 
 # =============================================================================
+# Subcommand: nuke — destroy everything this installer created
+# =============================================================================
+
+cmd_nuke() {
+    local remove_repo=0
+
+    echo
+    printf "${C_RED}${C_BOLD}+======================================================+${C_RESET}\n"
+    printf "${C_RED}${C_BOLD}|               >>>  NUKE MODE  <<<                   |${C_RESET}\n"
+    printf "${C_RED}${C_BOLD}+======================================================+${C_RESET}\n"
+    echo
+    echo "  The following will be permanently deleted:"
+    echo
+    [[ -d "$TOOLS_DIR" ]]         && printf "  ${C_YELLOW}[dir ]${C_RESET}  %s\n" "$TOOLS_DIR"
+    [[ -f "$ALIAS_FILE_BASH" ]]   && printf "  ${C_YELLOW}[file]${C_RESET}  %s\n" "$ALIAS_FILE_BASH"
+    [[ -f "$ALIAS_FILE_FISH" ]]   && printf "  ${C_YELLOW}[file]${C_RESET}  %s\n" "$ALIAS_FILE_FISH"
+    [[ -f "$IFACE_HELPER_BASH" ]] && printf "  ${C_YELLOW}[file]${C_RESET}  %s\n" "$IFACE_HELPER_BASH"
+    [[ -f "$IFACE_HELPER_FISH" ]] && printf "  ${C_YELLOW}[file]${C_RESET}  %s\n" "$IFACE_HELPER_FISH"
+    [[ -d "$LOG_DIR" ]]           && printf "  ${C_YELLOW}[dir ]${C_RESET}  %s  (logs)\n" "$LOG_DIR"
+    if [[ -f "$HOME/.bashrc" ]] && grep -q "tools-aliases.sh" "$HOME/.bashrc"; then
+        printf "  ${C_YELLOW}[line]${C_RESET}  ~/.bashrc  (source line removed)\n"
+    fi
+    if [[ -f "$HOME/.zshrc" ]] && grep -q "tools-aliases.sh" "$HOME/.zshrc"; then
+        printf "  ${C_YELLOW}[line]${C_RESET}  ~/.zshrc  (source line removed)\n"
+    fi
+    echo
+
+    if [[ "${ASSUME_YES:-0}" -eq 0 ]]; then
+        read -rp "  Also delete the installer repo itself (${SCRIPT_DIR})? [y/N] " _del_repo
+        [[ "${_del_repo,,}" == "y" ]] && remove_repo=1
+        echo
+        printf "${C_RED}  This cannot be undone.${C_RESET}\n"
+        printf "  Type ${C_BOLD}NUKE${C_RESET} to confirm, anything else to abort: "
+        read -r _confirm
+        if [[ "$_confirm" != "NUKE" ]]; then
+            warn "Aborted — nothing was deleted."
+            return 0
+        fi
+    else
+        remove_repo=1
+    fi
+
+    echo
+    section "Nuking"
+
+    # --- 1. All cloned tool repos ---
+    if [[ -d "$TOOLS_DIR" ]]; then
+        rm -rf "$TOOLS_DIR"
+        ok "Deleted tools dir: $TOOLS_DIR"
+    else
+        info "Skip (not found): $TOOLS_DIR"
+    fi
+
+    # --- 2. Generated config files ---
+    for f in "$ALIAS_FILE_BASH" "$ALIAS_FILE_FISH" "$IFACE_HELPER_BASH" "$IFACE_HELPER_FISH"; do
+        if [[ -f "$f" ]]; then
+            rm -f "$f"
+            ok "Deleted: $f"
+        fi
+    done
+
+    # --- 3. Unwire ~/.bashrc ---
+    if [[ -f "$HOME/.bashrc" ]] && grep -q "tools-aliases.sh" "$HOME/.bashrc"; then
+        sed -i '/# Pentest tool aliases/d;/tools-aliases\.sh/d' "$HOME/.bashrc"
+        ok "Cleaned source line from ~/.bashrc"
+    fi
+
+    # --- 4. Unwire ~/.zshrc ---
+    if [[ -f "$HOME/.zshrc" ]] && grep -q "tools-aliases.sh" "$HOME/.zshrc"; then
+        sed -i '/# Pentest tool aliases/d;/tools-aliases\.sh/d' "$HOME/.zshrc"
+        ok "Cleaned source line from ~/.zshrc"
+    fi
+
+    # --- 5. Logs ---
+    if [[ -d "$LOG_DIR" ]]; then
+        rm -rf "$LOG_DIR"
+        ok "Deleted logs: $LOG_DIR"
+    fi
+
+    # --- 6. Installer repo (optional) ---
+    if [[ "$remove_repo" -eq 1 ]]; then
+        # Safety guard: never delete HOME or /
+        if [[ "$SCRIPT_DIR" == "$HOME" || "$SCRIPT_DIR" == "/" || -z "$SCRIPT_DIR" ]]; then
+            warn "SCRIPT_DIR='$SCRIPT_DIR' looks dangerous — skipping repo deletion"
+        else
+            rm -rf "$SCRIPT_DIR"
+            ok "Deleted installer repo: $SCRIPT_DIR"
+        fi
+    else
+        info "Kept installer repo: $SCRIPT_DIR"
+    fi
+
+    echo
+    printf "${C_GREEN}${C_BOLD}  Done. Machine is clean.${C_RESET}\n"
+    echo
+    echo "  Reload your shell to clear any in-memory aliases:"
+    echo "    exec fish"
+    echo "    source ~/.bashrc"
+    echo "    source ~/.zshrc"
+    echo
+}
+
+# =============================================================================
 # Subcommand: menu
 # =============================================================================
 
@@ -958,6 +1061,7 @@ cmd_menu() {
         echo "  ${C_GREEN}6${C_RESET}) Remove a tool"
         echo "  ${C_GREEN}7${C_RESET}) Edit tools.json directly"
         echo "  ${C_GREEN}8${C_RESET}) Fix impacket (Kali-style symlinks)"
+        echo "  ${C_RED}9${C_RESET}) Nuke — delete all tools, aliases, config, logs"
         echo "  ${C_GREEN}q${C_RESET}) Quit"
         echo
         read -rp "Choice: " choice
@@ -970,6 +1074,7 @@ cmd_menu() {
             6) cmd_remove ;;
             7) cmd_edit ;;
             8) cmd_fix_impacket ;;
+            9) cmd_nuke ;;
             q|Q) ok "Bye"; break ;;
             *) warn "Unknown choice: $choice" ;;
         esac
@@ -996,6 +1101,7 @@ SUBCOMMANDS:
   remove         Interactively remove a tool
   edit           Open tools.json in \$EDITOR
   fix-impacket   Create Kali-style impacket-* symlinks (Arch only; no-op on Kali)
+  nuke           Delete all tools, aliases, config files, shell wiring, and logs
   menu           Interactive TUI menu (default if no args)
   help           Show this help
 
@@ -1101,6 +1207,7 @@ case "$SUBCOMMAND" in
     remove)       cmd_remove ;;
     edit)         cmd_edit ;;
     fix-impacket) cmd_fix_impacket ;;
+    nuke)         cmd_nuke ;;
     menu)         cmd_menu ;;
     *)            err "Unknown subcommand: $SUBCOMMAND"; usage; exit 1 ;;
 esac
