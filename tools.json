@@ -4,55 +4,76 @@
       "dir": "http-smb-server",
       "url": "https://github.com/1337codes/OSCP-HTTP-SMB-File-Transfer-Server",
       "alias": "tools",
-      "command": "sudo python3 {DIR}/tools.py"
+      "command": "sudo python3 {DIR}/tools.py",
+      "setup_hooks": [
+        "cp {PATCHES}/http-smb-server-tools.py {DIR}/tools.py",
+        "chmod +x {DIR}/tools.py"
+      ],
+      "prompt_interface": false
     },
     {
       "dir": "netcat-scanner",
       "url": "https://github.com/1337codes/OSCP-Netcat-scanner",
       "alias": "ncscanner",
-      "command": "sudo python3 {DIR}/ncscanner.py"
+      "command": "sudo python3 {DIR}/ncscanner.py",
+      "setup_hooks": [],
+      "prompt_interface": false
     },
     {
       "dir": "cve-suggester",
       "url": "https://github.com/1337codes/OSCP-CVE-exploit-suggester",
       "alias": "cve",
-      "command": "sudo python3 {DIR}/cve.py"
+      "command": "sudo python3 {DIR}/cve.py",
+      "setup_hooks": [],
+      "prompt_interface": false
     },
     {
       "dir": "nxc-prey",
       "url": "https://github.com/1337codes/OSCP-NXC-PREY",
       "alias": "nxcspray",
-      "command": "bash {DIR}/nxc_spray.sh"
+      "command": "bash {DIR}/nxc_spray.sh",
+      "setup_hooks": [],
+      "prompt_interface": false
     },
     {
       "dir": "nhas-ssh",
       "url": "https://github.com/1337codes/OSCP-nhas-ssh-server",
       "alias": "nhasup",
-      "command": "bash {DIR}/nhas-start.sh"
+      "command": "bash {DIR}/nhas-start.sh",
+      "setup_hooks": [],
+      "prompt_interface": false
     },
     {
       "dir": "ligolo",
       "url": "https://github.com/1337codes/OSCP-Ligolo",
       "alias": "ligoloup",
-      "command": "bash {DIR}/tunnels.sh"
+      "command": "bash {DIR}/tunnels.sh",
+      "setup_hooks": [],
+      "prompt_interface": true
     },
     {
       "dir": "ligolo",
       "url": "https://github.com/1337codes/OSCP-Ligolo",
       "alias": "ligolofix",
-      "command": "bash {DIR}/ligolofix.sh"
+      "command": "bash {DIR}/ligolofix.sh",
+      "setup_hooks": [],
+      "prompt_interface": false
     },
     {
       "dir": "binary-check",
       "url": "https://github.com/1337codes/OSCP-Binary-Check",
       "alias": "binary",
-      "command": "sudo python3 {DIR}/app.py"
+      "command": "sudo python3 {DIR}/app.py",
+      "setup_hooks": [],
+      "prompt_interface": false
     },
     {
       "dir": "snmp-enum",
       "url": "https://github.com/1337codes/OSCP-SNMP-enumeration",
       "alias": "snmpenum",
-      "command": "sudo python3 {DIR}/snmp.py"
+      "command": "sudo python3 {DIR}/snmp.py",
+      "setup_hooks": [],
+      "prompt_interface": false
     }
   ]
 }
